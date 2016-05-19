@@ -1,6 +1,12 @@
 #include "functions.h"
 #define THR_FB 20
 
+//Функция inout_rect  определяет принадлежность точек внутренней области прямоугольника
+//const std::vector<cv::KeyPoint>& keypoints - особые точки
+//cv::Point2f topleft, cv::Point2f bottomright - координаты прямоугольника
+//std::vector<cv::KeyPoint>& in - массив, куда записываются точки лежащие внутри прямоугольника
+// std::vector<cv::KeyPoint>& out - массив, куда записываются точки лежащие вне прямоугольника
+
 void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright,
                 std::vector<cv::KeyPoint>& in, std::vector<cv::KeyPoint>& out)
 {
@@ -12,11 +18,17 @@ void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft,
     }
 }
 
+//Функция track вычисляет новое положение объекта посредством оптического потока
+//cv::Mat im_prev - предыдущий кадр
+//cv::Mat im_gray - текущий кадр
+//const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN - особые точки объекта с предыдущего кадра
+//std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked - особые точки которые удалось обнаружить
+
 void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN,
-           std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked, std::vector<unsigned char>& status)
+           std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked)
 {
     //Status of tracked keypoint - True means successfully tracked
-    status = std::vector<unsigned char>();
+    std::vector<unsigned char> status = std::vector<unsigned char>();
 
     //If at least one keypoint is active
     if(keypointsIN.size() > 0)
@@ -61,6 +73,10 @@ void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::Key
     else keypointsTracked = std::vector<std::pair<cv::KeyPoint, int> >();
 }
 
+//Функция rotate  осуществляет поворот точки путем умножения на матрицу поворота
+//cv::Point2f p - точка
+//float rad - угол поворота
+//Возвращает точку с учетом поворота
 cv::Point2f rotate(cv::Point2f p, float rad)
 {
     if(rad == 0)
@@ -69,10 +85,12 @@ cv::Point2f rotate(cv::Point2f p, float rad)
     float c = cos(rad);
     return cv::Point2f(c*p.x-s*p.y,s*p.x+c*p.y);
 }
+//Компаратор для сортировки особых точек по убыванию response
 bool compare_response(const cv::KeyPoint &first, const cv::KeyPoint &second)
 {
     return (first.response > second.response);
 }
+//Функция Cout возвращает кол-во единиц в двоичном представлении числа
 int Count(unsigned char a)
 {
    int count=0;
@@ -83,6 +101,7 @@ int Count(unsigned char a)
     }
  return   count;
 }
+//Функция calcDist возвращает расстояние между двуми дескрипторами
 int calcDist (cv::Mat avg_object, cv::Mat avg_background) {
     int dist = 0;
     for(int j = 0; j < avg_object.cols; j++) {
@@ -91,21 +110,23 @@ int calcDist (cv::Mat avg_object, cv::Mat avg_background) {
     }
     return dist;
 }
-float fris (float d1, float d2)
-{
-//    float x = d1/(d1+d2);
-//    float t = 0.05;
-//    float w = t*std::sin(4*3.1415*x);
-//    float f = 1-2*x+w;
-//    return f;
-    return (d1-d2)/(d1+d2);
-}
+//float fris (float d1, float d2)
+//{
+////    float x = d1/(d1+d2);
+////    float t = 0.05;
+////    float w = t*std::sin(4*3.1415*x);
+////    float f = 1-2*x+w;
+////    return f;
+//    return (d1-d2)/(d1+d2);
+//}
 typedef std::pair<int,int> PairInt;
 typedef std::pair<float,int> PairFloat;
 bool comparatorPairSecond(const std::pair<int, int>& l, const std::pair<int, int>& r)
 {
     return l.second < r.second;
 }
+//Функция argSortInt из входного массива формирует пары (индекс,значение),
+//сортирует пары по значению и возвращает массив индексов отсортированных пар
 std::vector<int> argSortInt(const std::vector<int>& list)
 {
     std::vector<int> result(list.size());
@@ -117,6 +138,8 @@ std::vector<int> argSortInt(const std::vector<int>& list)
         result[i] = pairList[i].first;
     return result;
 }
+//Функция findPoints принимает массив кластеров и номер главного кластера.
+//В результате возвращает данные смежные с главным кластером
 std::vector<int> findPoints(std::vector<std::vector<int> > pairs, int idx)
 {
     std::vector<bool> used(pairs.size(), false);
@@ -143,6 +166,10 @@ std::vector<int> findPoints(std::vector<std::vector<int> > pairs, int idx)
     }
     return findedPoints;
 }
+//Функция calcHist вычисляет номера точек главного кластера в распределении точек:
+//Каждый кластер: если между двумя точками расстояние меньше treshold то они в одном кластере
+//Потом выбирается наибольший кластер, к нему добавляются точки кластеров,
+//в которых лажат его точки
 std::vector<int> calcHist(std::vector<cv::Point2f> votes, int treshold)
 {
     std::vector<std::vector<int> > pairs;
@@ -179,6 +206,7 @@ std::vector<int> calcHist(std::vector<cv::Point2f> votes, int treshold)
 }
 
 //todo : n*log(n) by sorting the second array and dichotomic search instead of n^2
+//Функция in1d вычисляет какие из точек массива а есть в массиве b, а какие нет
 std::vector<bool> in1d(const std::vector<int>& a, const std::vector<int>& b)
 {
     std::vector<bool> result;
@@ -195,6 +223,7 @@ std::vector<bool> in1d(const std::vector<int>& a, const std::vector<int>& b)
     }
     return result;
 }
+//Функция getAverage вычисляет средний дескриптор массива
 cv::Mat getAverage(cv::Mat arr, int descriptorLength)
 {
     cv::Mat res(arr.row(0).clone());

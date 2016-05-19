@@ -283,6 +283,27 @@ void fillDB (cv::Mat &selectedFeatures, std::vector<int> *selectedClasses, cv::M
      }
 }
 
+//Функция fillModelParams заполняет модель объекта
+//ВХОД:
+//cv::Point2f &topleft, cv::Point2f &bottomright - координаты левого верхнего и правого нижнего углов bounding box
+//float &point_avg_dist - среднее расстояние между точками(для оценки работы)
+//std::vector<std::vector<float>* > squareForm - матрица попарных расстояний
+//std::vector<std::vector<float>* > angles - матрица попарных углов
+//std::vector<cv::Point2f> *springs - координаты точек объекта относительно центра объекта
+//std::vector<cv::KeyPoint> &selected_keypoints - особые точки объекта
+//cv::Point2f &center -  координаты центра объекта
+//cv::Point2f &centerToTopLeft, cv::Point2f &centerToTopRight, cv::Point2f &centerToBottomRight,
+//cv::Point2f &centerToBottomLeft - координаты углов bounding box относительно центра объекта
+//РЕЗУЛЬТАТ:
+//Вычисляютс и заполняются:
+//float &point_avg_dist
+//std::vector<std::vector<float>* > squareForm
+//std::vector<std::vector<float>* > angles
+//std::vector<cv::Point2f> *springs
+//cv::Point2f &center
+//cv::Point2f &centerToTopLeft, cv::Point2f &centerToTopRight, cv::Point2f &centerToBottomRight,
+//cv::Point2f &centerToBottomLeft
+
 void fillModelParams (cv::Point2f &topleft, cv::Point2f &bottomright, float &point_avg_dist,
                     std::vector<std::vector<float>* > squareForm, std::vector<std::vector<float>* > angles,
                     std::vector<cv::Point2f> *springs, cv::Point2f &center, std::vector<cv::KeyPoint> &selected_keypoints,
@@ -324,6 +345,37 @@ void fillModelParams (cv::Point2f &topleft, cv::Point2f &bottomright, float &poi
     for(unsigned int i = 0; i < selected_keypoints.size(); i++)
         springs->at(i) = selected_keypoints[i].pt - center;
 }
+
+//Функция initialise_ определяет все данные об объекте
+//cv::Ptr<cv::FeatureDetector> &detector
+//cv::Ptr<cv::DescriptorExtractor> &descriptorExtractor
+//cv::Ptr<cv::DescriptorMatcher> &descriptorMatcher
+//std::string &detectorType
+//std::string &matcherType
+//_______________________________________
+//int backgroundPointsNum - кол-фо точек фона
+//int descriptorLength - длина дескриптора особой точки
+//cv::Mat &selectedFeatures - дескрипторы особых точек объекта
+//std::vector<int> *selectedClasses - номера особых точек объекта
+//cv::Mat &featuresDatabase - дескрипторы всех особых точек (фона и объекта)
+//cv::Mat &backgroundDatabase - дескрипторы особых точек фона
+//std::vector<int> &classesDatabase - номера всех точек(классы)
+//std::vector<int> *weigthsDatabase - база весов точек
+//cv::Mat &im_gray0 - начальный кадр в градациях серого
+//cv::Point2f &topleft, cv::Point2f &bottomright - координаты левого верхнего и правого нижнего углов bounding box
+//float &point_avg_dist -  среднее растояние между точками объекта
+//unsigned int &nbInitialKeypoints - начальное кол-во точек
+//std::vector<std::vector<float>* > squareForm - матрица попарных расстояний
+//std::vector<std::vector<float>* > angles - матрица попарных углов
+//std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints - массив пар вида (особая точка из модели объекта обнаруженная на текущем кадре; номер этой точки в модели)
+//std::vector<bool> *isActive - массив в котором обозначено какие из номеров активны(номеру соответствует некоторая точка модели)
+//std::vector<cv::Point2f> *springs - координаты точек объекта относительно центра объекта
+//cv::Point2f &center - координаты центра объекта
+//cv::Mat &im_prev - предыдущий кадр(начальный кадр im_gray0 станет им в результате работф функции)
+//cv::Point2f &centerToTopLeft, cv::Point2f &centerToTopRight, cv::Point2f &centerToBottomRight,
+//cv::Point2f &centerToBottomLeft - координаты углов bounding box относительно центра объекта
+//РЕЗУЛЬТАТ:
+//заполнение всех параметров отделенных чертой
 
 void initialise_(cv::Ptr<cv::FeatureDetector> &detector, cv::Ptr<cv::DescriptorExtractor> &descriptorExtractor ,cv::Ptr<cv::DescriptorMatcher> &descriptorMatcher,
                 std::string &detectorType, std::string &matcherType, int &backgroundPointsNum, int descriptorLength,
@@ -418,8 +470,27 @@ void initialise_(cv::Ptr<cv::FeatureDetector> &detector, cv::Ptr<cv::DescriptorE
     nbInitialKeypoints = selected_keypoints.size();
 }
 
-void getActivePoints (cv::Mat &activeFeaturesDB, cv::Mat &activeSelectedFeatures, cv::Mat &backgrdDb, cv::Mat &featuresDatabase,
-                      std::vector<int> &featuresIdxs, std::vector<int> &selectedfeaturesIdxs, std::vector<bool> *isActive, int backgroundPointsNum)
+//Функция getActivePoints выбирает из модели данные только активных точек
+//ВХОД:
+//cv::Mat &activeFeaturesDB - база дескрипторов активных точек объекта и точек фона
+//cv::Mat &activeSelectedFeatures - база дескрипторов активных точек объекта
+//cv::Mat &backgrdDb - база дескрипторов фона
+//cv::Mat &featuresDatabase - база всех дескрипторов
+//std::vector<int> &featuresIdxs - массив индексов активных точек объекта и фона
+//std::vector<int> &selectedfeaturesIdxs - массив индексов активных точек объекта
+//std::vector<bool> *isActive - массив в котором обозначено какие из номеров активны(номеру соответствует некоторая точка модели)
+//int backgroundPointsNum - кол-фо точек фона
+//РЕЗУЛЬТАТ:
+//Заполняются:
+//cv::Mat &activeFeaturesDB
+//cv::Mat &activeSelectedFeatures
+//std::vector<int> &featuresIdxs
+//std::vector<int> &selectedfeaturesIdxs
+
+void getActivePoints (cv::Mat &activeFeaturesDB, cv::Mat &activeSelectedFeatures, cv::Mat &backgrdDb,
+                      cv::Mat &featuresDatabase, std::vector<int> &featuresIdxs,
+                      std::vector<int> &selectedfeaturesIdxs, std::vector<bool> *isActive, int backgroundPointsNum)
+
 {
     activeFeaturesDB.push_back(backgrdDb);
 
@@ -571,6 +642,17 @@ void matchPoints (int descriptorLength, int thrOutlier, float thrConf, float thr
     }
 }
 
+//Функция deletePoints изменяет вес точек и удаляет(во вложенной ф-и dropPoint) те, у которых вес отрицательный
+//int backgroundPointsNum - кол-фо точек фона
+//cv::Mat &selectedFeatures - дескрипторы особых точек объекта
+//cv::Mat &featuresDatabase - дескрипторы всех особых точек (фона и объекта)
+//std::vector<int> *weigthsDatabase - база весов точек
+//std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints - массив пар вида (особая точка из модели объекта обнаруженная на текущем кадре; номер этой точки в модели)
+//std::vector<bool> *isActive - массив в котором обозначено какие из номеров активны(номеру соответствует некоторая точка модели)
+//bool &hasResult - параметр указывающий, что объект обнаружен
+//РЕЗУЛЬТАТ:
+//std::vector<int> *weigthsDatabase - изменяются веса
+
 void deletePoints (int backgroundPointsNum, cv::Mat &selectedFeatures, cv::Mat &featuresDatabase,
                    std::vector<int> *weigthsDatabase, std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints,
                    std::vector<bool> *isActive, bool &hasResult)
@@ -594,6 +676,30 @@ void deletePoints (int backgroundPointsNum, cv::Mat &selectedFeatures, cv::Mat &
         }
     }
 }
+
+//Функция addNewPoints добавляет новые точки в модель
+//ВХОД:
+//std::vector<cv::KeyPoint> &keypoints - особые точки кадра
+//int backgroundPointsNum - кол-фо точек фона
+//cv::Mat &selectedFeatures - дескрипторы особых точек объекта
+//cv::Mat &featuresDatabase - дескрипторы всех особых точек (фона и объекта)
+//std::vector<int> &selectedfeaturesIdxs - номера особых точек объекта
+//std::vector<int> *weigthsDatabase - база весов точек
+//std::vector<std::vector<cv::DMatch> > &selectedMatchesAll - результат попарного сравнения точек кадра и точек объекта
+//std::vector<std::vector<cv::DMatch> > &backgroundMatches - результат попарного сравнения точек кадра и точек объекта
+//cv::Mat &features - дескрипторы точек кадра
+//float &point_avg_dist -  среднее растояние между точками объекта
+//float dist_coef - порог на геометрическое расстояние
+//float tresh1, float tresh2 - пороговые значения для FRiS. значение FRiS должно лежать в [tresh1, tresh2]
+//std::vector<std::vector<float>* > squareForm - матрица попарных расстояний
+//std::vector<std::vector<float>* > angles - матрица попарных углов
+//std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints - массив пар вида (особая точка из модели объекта обнаруженная на текущем кадре; номер этой точки в модели)
+//std::vector<bool> *isActive - массив в котором обозначено какие из номеров активны(номеру соответствует некоторая точка модели)
+//std::vector<cv::Point2f> *springs - координаты точек объекта относительно центра объекта
+//cv::Point2f &center - координаты центра объекта
+//cv::Point2f &topLeft, cv::Point2f &topRight, cv::Point2f &bottomRight, cv::Point2f &bottomLeft - координаты углов bounding box
+//РЕЗУЛЬТАТ:
+//Добавление точек(см addPoint)
 
 void addNewPoints(std::vector<cv::KeyPoint> &keypoints, int &backgroundPointsNum,
                   cv::Mat &selectedFeatures, cv::Mat &featuresDatabase, std::vector<int> &selectedfeaturesIdxs,
@@ -632,23 +738,54 @@ void addNewPoints(std::vector<cv::KeyPoint> &keypoints, int &backgroundPointsNum
     }
 }
 
+//Функция processFrame_ обнаруживает объект и обновляет модель объекта на каждом кадре
+//cv::Mat &im_gray - текущий кадр в градациях серого
+//cv::Ptr<cv::FeatureDetector> &detector
+//cv::Ptr<cv::DescriptorExtractor> &descriptorExtractor
+//cv::Ptr<cv::DescriptorMatcher> &descriptorMatcher
+//int backgroundPointsNum - кол-фо точек фона
+//int descriptorLength - длина дескриптора особой точки
+//unsigned int &nbInitialKeypoints - начальное кол-во точек
+//_______________________________________
+//cv::Mat &selectedFeatures - дескрипторы особых точек объекта
+//std::vector<int> *selectedClasses - номера особых точек объекта
+//cv::Mat &featuresDatabase - дескрипторы всех особых точек (фона и объекта)
+//cv::Mat &backgroundDatabase - дескрипторы особых точек фона
+//std::vector<int> &classesDatabase - номера всех точек(классы)
+//std::vector<int> *weigthsDatabase - база весов точек
+//float &point_avg_dist -  среднее растояние между точками объекта
+//std::vector<std::vector<float>* > squareForm - матрица попарных расстояний
+//std::vector<std::vector<float>* > angles - матрица попарных углов
+//std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints - массив пар вида (особая точка из модели объекта обнаруженная на текущем кадре; номер этой точки в модели)
+//std::vector<bool> *isActive - массив в котором обозначено какие из номеров активны(номеру соответствует некоторая точка модели) std::vector<cv::Point2f> *springs, cv::Point2f &center - центр объекта
+//cv::Mat &im_prev - предыдущий кадр
+//cv::Point2f &centerToTopLeft, cv::Point2f &centerToTopRight, cv::Point2f &centerToBottomRight,
+//cv::Point2f &centerToBottomLeft - координаты углов bounding box относительно центра объекта
+//int thrOutlier, float thrConf, float thrRatio - пороговые значения
+//bool estimateScale, bool estimateRotation - указываюи учитывать ли масштаб и вращение
+//cv::Rect_<float> &boundingbox -  рамка вмещающая объект
+//bool &hasResult -  указывает, что объект обнаружен
+//float dist_coef, float tresh1, float tresh2 - пороговые значения
+//cv::Point2f &topLeft, cv::Point2f &topRight, cv::Point2f &bottomRight, cv::Point2f &bottomLeft - координаты углов bounding box
+//РЕЗУЛЬТАТ:
+//Пересчет параметров отделенных чертой
+
 void processFrame_(cv::Mat &im_gray, cv::Ptr<cv::FeatureDetector> &detector, cv::Ptr<cv::DescriptorExtractor> &descriptorExtractor,
                    cv::Ptr<cv::DescriptorMatcher> &descriptorMatcher, int &backgroundPointsNum, int descriptorLength,
                    cv::Mat &selectedFeatures, std::vector<int> *selectedClasses, cv::Mat &featuresDatabase,
                    std::vector<int> &classesDatabase, std::vector<int> *weigthsDatabase,
                    float &point_avg_dist, unsigned int &nbInitialKeypoints,
-                   std::vector<std::vector<float>* > squareForm, std::vector<std::vector<float>* > angles, std::vector<cv::Point2f> &votes,
-                   std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints,std::vector<std::pair<cv::KeyPoint,int> > &trackedKeypoints,
+                   std::vector<std::vector<float>* > squareForm, std::vector<std::vector<float>* > angles,
+                   std::vector<std::pair<cv::KeyPoint,int> > &activeKeypoints,
                    std::vector<bool> *isActive, std::vector<cv::Point2f> *springs, cv::Point2f &center, cv::Mat &im_prev,
                    cv::Point2f &centerToTopLeft, cv::Point2f &centerToTopRight, cv::Point2f &centerToBottomRight, cv::Point2f &centerToBottomLeft,
                    int thrOutlier, float thrConf, float thrRatio, bool estimateScale, bool estimateRotation, cv::Rect_<float> &boundingbox,
                    bool &hasResult, float dist_coef, float tresh1, float tresh2,
                    cv::Point2f &topLeft, cv::Point2f &topRight, cv::Point2f &bottomRight, cv::Point2f &bottomLeft)
 {
-    trackedKeypoints = std::vector<std::pair<cv::KeyPoint, int> >();
-    std::vector<unsigned char> status;
+    std::vector<std::pair<cv::KeyPoint, int> > trackedKeypoints = std::vector<std::pair<cv::KeyPoint, int> >();
 
-    track(im_prev, im_gray, activeKeypoints, trackedKeypoints, status);
+    track(im_prev, im_gray, activeKeypoints, trackedKeypoints);
 
     std::vector<std::pair<cv::KeyPoint, int> > trackedKeypoints2;
 

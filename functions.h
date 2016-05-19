@@ -7,8 +7,12 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
+inline float fris (float d1, float d2)
+{
+    return (d1-d2)/(d1+d2);
+}
 void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright, std::vector<cv::KeyPoint>& in, std::vector<cv::KeyPoint>& out);
-void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN, std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked, std::vector<unsigned char>& status);
+void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN, std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked);
 cv::Point2f rotate(cv::Point2f p, float rad);
 bool compare_response(const cv::KeyPoint &first, const cv::KeyPoint &second);
 int Count(unsigned char a);
