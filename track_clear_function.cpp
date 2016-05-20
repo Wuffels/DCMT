@@ -96,7 +96,7 @@ void addPoint_(cv::KeyPoint &point, cv::Mat &descriptor, std::vector<bool> *isAc
             squareForm.at(idx)->at(i) = dist;
             squareForm.at(i)->at(idx) = dist;
             angles.at(idx)->at(i) = atan2(dy, dx);
-            angles.at(i)->at(idx) = atan2(dy, dx);
+            angles.at(i)->at(idx) = atan2(-dy, -dx);
         } else{
             squareForm.at(idx)->at(i) = 0;
             angles.at(idx)->at(i) = 0;
@@ -321,7 +321,6 @@ void fillModelParams (cv::Point2f &topleft, cv::Point2f &bottomright, float &poi
             squareForm.at(i)->at(j) = dist;
             angles.at(i)->at(j) = atan2(dy, dx);
             squareForm.at(j)->at(i) = dist;
-            angles.at(j)->at(i) = atan2(dy, dx); //wtf????
         }
     }
 
