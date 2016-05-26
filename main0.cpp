@@ -10,6 +10,9 @@
 #include "in_out.h"
 #include "trackobject.h"
 
+#define VOT_RECTANGLE
+#include "vot.h"
+
 
 cv::Point point1,point2;
 cv::Rect rect;
@@ -49,6 +52,39 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
         drag = 0;
     }
 }
+
+/*!
+ * \brief votRoutine тестирование алгоритма с помощью VOT
+ */
+void votRoutine(float dist,float th1,float th2){
+    VOT vot;
+    TrackObject cmt;
+
+    cmt.dist_coef = dist;
+    cmt.tresh1 = th1;
+    cmt.tresh2 = th2;
+
+
+    VOTRegion region = vot.region(); // Get region and first frame
+    string path = vot.frame();
+
+
+    cv::Mat gray = cv::imread(path,0);
+    cmt.initialise(gray,cv::Point2f(region.get_x(),region.get_y()), cv::Point2f(region.get_x()+region.get_width(),region.get_y()+region.get_height()));
+    while (true) {
+           path = vot.frame(); // Get the next frame
+           if (path.empty()) break; // Are we done?
+
+           gray = cv::imread(path,0);
+           cmt.processFrame(gray);
+           region.set_x(cmt.boundingbox.x);
+           region.set_y(cmt.boundingbox.y);
+           region.set_width(cmt.boundingbox.width);
+           region.set_height(cmt.boundingbox.height);
+           vot.report(region); // Report the position of the tracker
+       }
+}
+
 //параметры на вход: имя_программы.exe имя_файла(папки)_где_видео имя_файла_с_координатами.txt dist tresh1 tresh2 show
 //координаты в файле  - левый верхний угол и длины сторон
 //dist - порог на геом расстояние
@@ -56,9 +92,17 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 //show - 0 - не показывать кадр, 1 - показывать
 int main(int argC, char*argV[])
 {
-//    printf("@%lf\n", cv::getTickFrequency());
-//    return 0;
-    //cv::VideoWriter out("D:/res_weigths.avi",CV_FOURCC('D','I','V','X'),20,cv::Size(290,217));
+    if(1==argC){
+        return -1;
+    }
+    if(5==argC){
+        if(std::string(argV[1])=="vot"){
+            votRoutine(atof(argV[2]),atof(argV[3]),atof(argV[4]));
+            return 0;
+        }else{
+            return -2;
+        }
+    }
     TrackObject cmt;
     Input in;
     if(!in.init(argC, argV, &cmt)) {
