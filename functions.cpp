@@ -7,7 +7,7 @@
 //std::vector<cv::KeyPoint>& in - массив, куда записываются точки лежащие внутри прямоугольника
 // std::vector<cv::KeyPoint>& out - массив, куда записываются точки лежащие вне прямоугольника
 
-void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright,
+void inoutRect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright,
                 std::vector<cv::KeyPoint>& in, std::vector<cv::KeyPoint>& out)
 {
     for(unsigned int i = 0; i < keypoints.size(); i++)
@@ -19,12 +19,12 @@ void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft,
 }
 
 //Функция track вычисляет новое положение объекта посредством оптического потока
-//cv::Mat im_prev - предыдущий кадр
-//cv::Mat im_gray - текущий кадр
+//cv::Mat imPrev - предыдущий кадр
+//cv::Mat imCurr - текущий кадр
 //const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN - особые точки объекта с предыдущего кадра
 //std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked - особые точки которые удалось обнаружить
 
-void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN,
+void track(cv::Mat imPrev, cv::Mat imCurr, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN,
            std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked)
 {
     //Status of tracked keypoint - True means successfully tracked
@@ -34,42 +34,45 @@ void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::Key
     if(keypointsIN.size() > 0)
     {
         std::vector<cv::Point2f> pts;
-        std::vector<cv::Point2f> pts_back;
-        std::vector<cv::Point2f> nextPts;
-        std::vector<unsigned char> status_back;
+        std::vector<cv::Point2f> ptsBack;
+        std::vector<cv::Point2f> ptsNext;
+        std::vector<unsigned char> statusBack;
         std::vector<float> err;
-        std::vector<float> err_back;
-        std::vector<float> fb_err;
+        std::vector<float> errBack;
+        std::vector<float> fbErr;
+
         for(unsigned int i = 0; i < keypointsIN.size(); i++)
             pts.push_back(cv::Point2f(keypointsIN[i].first.pt.x,keypointsIN[i].first.pt.y));
 
         //Calculate forward optical flow for prev_location
-        cv::calcOpticalFlowPyrLK(im_prev, im_gray, pts, nextPts, status, err);
+        cv::calcOpticalFlowPyrLK(imPrev, imCurr, pts, ptsNext, status, err);
         //Calculate backward optical flow for prev_location
-        cv::calcOpticalFlowPyrLK(im_gray, im_prev, nextPts, pts_back, status_back, err_back);
+        cv::calcOpticalFlowPyrLK(imCurr, imPrev, ptsNext, ptsBack, statusBack, errBack);
 
         //Calculate forward-backward error
         for(unsigned int i = 0; i < pts.size(); i++)
         {
-            cv::Point2f v = pts_back[i]-pts[i];
-            fb_err.push_back(sqrt(v.dot(v)));
+            cv::Point2f v = ptsBack[i]-pts[i];
+            fbErr.push_back(sqrt(v.dot(v)));
         }
 
-        //Set status depending on fb_err and lk error
+        //Set status depending on fbErr and lk error
         for(unsigned int i = 0; i < status.size(); i++)
-            status[i] = (fb_err[i] <= THR_FB) & status[i];
+            status[i] = (fbErr[i] <= THR_FB) & status[i];
 
         keypointsTracked = std::vector<std::pair<cv::KeyPoint, int> >();
+
         for(unsigned int i = 0; i < pts.size(); i++)
         {
             std::pair<cv::KeyPoint, int> p = keypointsIN[i];
             if(status[i])
             {
-                p.first.pt = nextPts[i];
+                p.first.pt = ptsNext[i];
                 keypointsTracked.push_back(p);
             }
         }
     }
+
     else keypointsTracked = std::vector<std::pair<cv::KeyPoint, int> >();
 }
 
@@ -86,12 +89,12 @@ cv::Point2f rotate(cv::Point2f p, float rad)
     return cv::Point2f(c*p.x-s*p.y,s*p.x+c*p.y);
 }
 //Компаратор для сортировки особых точек по убыванию response
-bool compare_response(const cv::KeyPoint &first, const cv::KeyPoint &second)
+bool compareResponse(const cv::KeyPoint &first, const cv::KeyPoint &second)
 {
     return (first.response > second.response);
 }
 //Функция Cout возвращает кол-во единиц в двоичном представлении числа
-int Count(unsigned char a)
+int countOnesInBinVal(unsigned char a)
 {
    int count=0;
    while(a)
@@ -102,23 +105,14 @@ int Count(unsigned char a)
  return   count;
 }
 //Функция calcDist возвращает расстояние между двуми дескрипторами
-int calcDist (cv::Mat avg_object, cv::Mat avg_background) {
+int calcDist (cv::Mat avgObject, cv::Mat avgBackground) {
     int dist = 0;
-    for(int j = 0; j < avg_object.cols; j++) {
-        unsigned char val = (avg_object.at<unsigned char> (0, j)) ^ (avg_background.at<unsigned char> (0, j));
-        dist += Count(val);
+    for(int j = 0; j < avgObject.cols; j++) {
+        unsigned char val = (avgObject.at<unsigned char> (0, j)) ^ (avgBackground.at<unsigned char> (0, j));
+        dist += countOnesInBinVal(val);
     }
     return dist;
 }
-//float fris (float d1, float d2)
-//{
-////    float x = d1/(d1+d2);
-////    float t = 0.05;
-////    float w = t*std::sin(4*3.1415*x);
-////    float f = 1-2*x+w;
-////    return f;
-//    return (d1-d2)/(d1+d2);
-//}
 typedef std::pair<int,int> PairInt;
 typedef std::pair<float,int> PairFloat;
 bool comparatorPairSecond(const std::pair<int, int>& l, const std::pair<int, int>& r)

@@ -11,13 +11,19 @@ inline float fris (float d1, float d2)
 {
     return (d1-d2)/(d1+d2);
 }
-void inout_rect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright, std::vector<cv::KeyPoint>& in, std::vector<cv::KeyPoint>& out);
-void track(cv::Mat im_prev, cv::Mat im_gray, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN, std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked);
+void inoutRect(const std::vector<cv::KeyPoint>& keypoints, cv::Point2f topleft, cv::Point2f bottomright, std::vector<cv::KeyPoint>& in, std::vector<cv::KeyPoint>& out);
+void track(cv::Mat imPrev, cv::Mat imCurr, const std::vector<std::pair<cv::KeyPoint, int> >& keypointsIN, std::vector<std::pair<cv::KeyPoint, int> >& keypointsTracked);
 cv::Point2f rotate(cv::Point2f p, float rad);
-bool compare_response(const cv::KeyPoint &first, const cv::KeyPoint &second);
+bool compareResponse(const cv::KeyPoint &first, const cv::KeyPoint &second);
 int Count(unsigned char a);
 int calcDist (cv::Mat avg_object, cv::Mat avg_background);
-float fris (float d1, float d2);
+bool comparatorPairSecond(const std::pair<int, int>& l, const std::pair<int, int>& r);
+std::vector<int> argSortInt(const std::vector<int>& list);
+std::vector<int> findPoints(std::vector<std::vector<int> > pairs, int idx);
+std::vector<int> calcHist(std::vector<cv::Point2f> votes, int treshold);
+std::vector<bool> in1d(const std::vector<int>& a, const std::vector<int>& b);
+cv::Mat getAverage(cv::Mat arr, int descriptorLength);
+
 typedef std::pair<int,int> PairInt;
 typedef std::pair<float,int> PairFloat;
 template<typename T>
@@ -51,12 +57,6 @@ T median(std::vector<T> list)
     }
     return val;
 }
-bool comparatorPairSecond(const std::pair<int, int>& l, const std::pair<int, int>& r);
-std::vector<int> argSortInt(const std::vector<int>& list);
-std::vector<int> findPoints(std::vector<std::vector<int> > pairs, int idx);
-std::vector<int> calcHist(std::vector<cv::Point2f> votes, int treshold);
-std::vector<bool> in1d(const std::vector<int>& a, const std::vector<int>& b);
-cv::Mat getAverage(cv::Mat arr, int descriptorLength);
 
 #endif // FUNCTIONS_H
 
